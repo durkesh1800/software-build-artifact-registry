@@ -1,0 +1,77 @@
+
+name: Deploy verified artifacts to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build versioned artifacts
+        run: python scripts/build_artifacts.py
+
+      - name: Verify artifact checksums
+        working-directory: dist
+        run: sha256sum -c SHA256SUMS.txt
+
+      - name: Prepare deployment site
+        run: |
+          mkdir -p _site/v1.0.0 _site/v2.0.0
+          unzip dist/app-v1.0.0.zip -d _site/v1.0.0
+          unzip dist/app-v2.0.0.zip -d _site/v2.0.0
+          cat > _site/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>TECH X | Artifact Registry Demo</title>
+          </head>
+          <body>
+            <h1>TECH X - Software Build Artifact Registry</h1>
+            <p>Choose a version whose artifact was built and checksum-verified in CI.</p>
+            <ul>
+              <li><a href="./v1.0.0/">Open application v1.0.0</a></li>
+              <li><a href="./v2.0.0/">Open application v2.0.0</a></li>
+            </ul>
+          </body>
+          </html>
+          EOF
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
