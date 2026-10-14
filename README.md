@@ -94,7 +94,7 @@ The tampered file name is not in the manifest, so the verifier should reject it.
 SHA-256 detects accidental or unauthorized changes only when the expected checksum itself is trusted. For stronger production provenance, protect release permissions and consider signed checksums/attestations. This demo's release tag is intentionally fixed for easy hackathon reruns; production systems should use immutable, unique release tags.
 ## Live Deployment
 
-**ArtifactHub Website:** https://black-violet-2fba.udhayadk10.workers.dev
+**ArtifactHub Website:** https://softwareartifactregistery.udhayadk10.workers.dev/
 
 Hosted on Cloudflare Workers.
 
