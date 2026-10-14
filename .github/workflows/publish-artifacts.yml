@@ -1,0 +1,50 @@
+name: Build and publish versioned artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'versions/**'
+      - 'scripts/build_artifacts.py'
+      - '.github/workflows/publish-artifacts.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build both versioned artifacts and checksums
+        run: python scripts/build_artifacts.py
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
+
+      - name: Publish artifacts as GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: artifact-registry-demo
+          name: Software Build Artifact Registry Demo
+          body: |
+            Automated release containing two versioned ZIP artifacts, SHA-256 checksums, and build metadata.
+            Retrieve a version and verify it before deployment using scripts/retrieve-and-verify.ps1.
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/app-v1.0.0.zip
+            dist/app-v2.0.0.zip
+            dist/SHA256SUMS.txt
+            dist/metadata.json
